@@ -100,6 +100,7 @@ class TrafficManagementAPITester:
     def test_create_emergency_vehicle(self):
         """Test creating a new emergency vehicle"""
         vehicle_data = {
+            "id": f"test_vehicle_{int(time.time())}",  # Generate a unique ID
             "type": "ambulance",
             "latitude": 40.7575,
             "longitude": -73.9840,
