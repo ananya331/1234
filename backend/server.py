@@ -440,11 +440,29 @@ async def traffic_simulation_loop():
                         vehicle.active = False
             
             # Broadcast updates
+            def serialize_datetime(obj):
+                if isinstance(obj, datetime):
+                    return obj.isoformat()
+                raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+            
+            intersections_data = []
+            for i in traffic_manager.intersections.values():
+                data = i.dict()
+                data['last_updated'] = data['last_updated'].isoformat() if data['last_updated'] else None
+                intersections_data.append(data)
+            
+            vehicles_data = []
+            for v in traffic_manager.emergency_vehicles.values():
+                if v.active:
+                    data = v.dict()
+                    data['estimated_arrival'] = data['estimated_arrival'].isoformat() if data['estimated_arrival'] else None
+                    vehicles_data.append(data)
+            
             await manager.broadcast(json.dumps({
                 "type": "traffic_update",
                 "timestamp": datetime.utcnow().isoformat(),
-                "intersections": [i.dict() for i in traffic_manager.intersections.values()],
-                "emergency_vehicles": [v.dict() for v in traffic_manager.emergency_vehicles.values() if v.active]
+                "intersections": intersections_data,
+                "emergency_vehicles": vehicles_data
             }))
             
             await asyncio.sleep(1)  # Update every second
