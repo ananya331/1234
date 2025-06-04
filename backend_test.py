@@ -45,13 +45,20 @@ class TrafficManagementAPITester:
                 self.tests_passed += 1
                 print(f"✅ Passed - Status: {response.status_code}")
                 if response.status_code != 204:  # No content
-                    result["response"] = response.json()
+                    try:
+                        result["response"] = response.json()
+                        print(f"Response: {json.dumps(response.json(), indent=2)[:500]}...")
+                    except:
+                        result["response"] = response.text
+                        print(f"Response: {response.text[:500]}...")
             else:
                 print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
                 try:
                     result["error"] = response.json()
+                    print(f"Error: {json.dumps(response.json(), indent=2)}")
                 except:
                     result["error"] = response.text
+                    print(f"Error: {response.text}")
 
             self.test_results.append(result)
             return success, response.json() if success and response.status_code != 204 else {}
@@ -97,8 +104,8 @@ class TrafficManagementAPITester:
         )
         return success, response
 
-    def test_create_emergency_vehicle(self):
-        """Test creating a new emergency vehicle"""
+    def test_create_emergency_vehicle_with_id(self):
+        """Test creating a new emergency vehicle with ID (old way)"""
         vehicle_data = {
             "id": f"test_vehicle_{int(time.time())}",  # Generate a unique ID
             "type": "ambulance",
@@ -112,7 +119,29 @@ class TrafficManagementAPITester:
         }
         
         success, response = self.run_test(
-            "Create Emergency Vehicle",
+            "Create Emergency Vehicle With ID",
+            "POST",
+            "api/emergency-vehicles",
+            200,
+            data=vehicle_data
+        )
+        return success, response
+
+    def test_create_emergency_vehicle_without_id(self):
+        """Test creating a new emergency vehicle without ID (should auto-generate)"""
+        vehicle_data = {
+            "type": "ambulance",
+            "latitude": 40.7580,
+            "longitude": -73.9845,
+            "destination_lat": 40.7605,
+            "destination_lon": -73.9875,
+            "speed": 50.0,
+            "route": ["int_001", "int_003"],
+            "priority_level": 8
+        }
+        
+        success, response = self.run_test(
+            "Create Emergency Vehicle Without ID",
             "POST",
             "api/emergency-vehicles",
             200,
@@ -172,13 +201,22 @@ def main():
     # Test 3: Get traffic status
     status_success, status = tester.test_get_traffic_status()
     
-    # Test 4: Create a new emergency vehicle
-    create_success, new_vehicle = tester.test_create_emergency_vehicle()
+    # Test 4: Create a new emergency vehicle with ID (old way)
+    create_with_id_success, vehicle_with_id = tester.test_create_emergency_vehicle_with_id()
     
-    # Test 5: Test priority override (if previous tests succeeded)
-    if intersections_success and create_success and len(intersections) > 0:
+    # Test 5: Create a new emergency vehicle without ID (should auto-generate)
+    create_without_id_success, vehicle_without_id = tester.test_create_emergency_vehicle_without_id()
+    
+    # Test 6: Test priority override with vehicle created with ID
+    if intersections_success and create_with_id_success and len(intersections) > 0:
         intersection_id = intersections[0]["id"]
-        vehicle_id = new_vehicle["id"]
+        vehicle_id = vehicle_with_id["id"]
+        tester.test_priority_override(intersection_id, vehicle_id)
+    
+    # Test 7: Test priority override with vehicle created without ID
+    if intersections_success and create_without_id_success and len(intersections) > 0:
+        intersection_id = intersections[0]["id"]
+        vehicle_id = vehicle_without_id["id"]
         tester.test_priority_override(intersection_id, vehicle_id)
     
     # Print summary
