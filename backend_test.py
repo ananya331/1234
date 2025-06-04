@@ -100,7 +100,6 @@ class TrafficManagementAPITester:
     def test_create_emergency_vehicle(self):
         """Test creating a new emergency vehicle"""
         vehicle_data = {
-            "id": str(int(time.time())),  # Generate a unique ID
             "type": "ambulance",
             "latitude": 40.7575,
             "longitude": -73.9840,
@@ -108,9 +107,7 @@ class TrafficManagementAPITester:
             "destination_lon": -73.9870,
             "speed": 45.0,
             "route": ["int_001", "int_002"],
-            "priority_level": 9,
-            "active": True,
-            "estimated_arrival": datetime.utcnow().isoformat()
+            "priority_level": 9
         }
         
         success, response = self.run_test(
