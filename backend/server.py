@@ -366,10 +366,14 @@ async def priority_override(intersection_id: str, priority_request: PriorityRequ
         vehicle = traffic_manager.emergency_vehicles[priority_request.vehicle_id]
         traffic_manager.activate_emergency_mode(intersection_id, vehicle)
     
+    # Serialize intersection data properly
+    intersection_data = intersection.dict()
+    intersection_data['last_updated'] = intersection_data['last_updated'].isoformat() if intersection_data['last_updated'] else None
+    
     await manager.broadcast(json.dumps({
         "type": "priority_override",
         "intersection_id": intersection_id,
-        "data": intersection.dict()
+        "data": intersection_data
     }))
     
     return {"status": "Priority override activated", "intersection_id": intersection_id}
