@@ -79,7 +79,7 @@ class Intersection(BaseModel):
     last_updated: datetime
 
 class EmergencyVehicle(BaseModel):
-    id: str
+    id: Optional[str] = None
     type: str  # ambulance, fire_truck, police
     latitude: float
     longitude: float
