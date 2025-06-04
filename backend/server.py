@@ -332,14 +332,21 @@ async def get_emergency_vehicles():
 @app.post("/api/emergency-vehicles")
 async def create_emergency_vehicle(vehicle: EmergencyVehicle):
     """Create new emergency vehicle dispatch"""
-    vehicle.id = str(uuid.uuid4())
+    if not vehicle.id:
+        vehicle.id = str(uuid.uuid4())
     vehicle.active = True
+    if not vehicle.estimated_arrival:
+        vehicle.estimated_arrival = datetime.utcnow() + timedelta(minutes=5)
+    
     traffic_manager.emergency_vehicles[vehicle.id] = vehicle
     
     # Broadcast update
+    vehicle_data = vehicle.dict()
+    vehicle_data['estimated_arrival'] = vehicle_data['estimated_arrival'].isoformat() if vehicle_data['estimated_arrival'] else None
+    
     await manager.broadcast(json.dumps({
         "type": "emergency_vehicle_created",
-        "data": vehicle.dict()
+        "data": vehicle_data
     }))
     
     return vehicle
